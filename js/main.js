@@ -63,7 +63,7 @@ clock = new THREE.Clock();
 // Load a glTF resource
 loader.load(
   // resource URL
-  "/scene.gltf",
+  "scene.gltf",
   // called when the resource is loaded
   function (gltf) {
     gltf.scene.scale.set(0.05, 0.05, 0.05);
@@ -111,4 +111,15 @@ window.addEventListener('scroll' , function(e){
   mixer.update( (newValue - oldValue) / 250 );
   oldValue = newValue;
 });
+
+window.addEventListener( 'resize', onWindowResize, false );
+
+function onWindowResize(){
+
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize( window.innerWidth, window.innerHeight );
+
+}
 
