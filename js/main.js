@@ -3,6 +3,8 @@ import {LoremIpsum} from "lorem-ipsum";
 import * as THREE from "three";
 import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
 import {RGBELoader} from "three/examples/jsm/loaders/RGBELoader";
+import {MathUtil} from "three/examples/jsm/libs/OimoPhysics";
+import {TextureLoader} from "three";
 
 const lorem = new LoremIpsum({
   sentencesPerParagraph: {
@@ -18,9 +20,9 @@ const lorem = new LoremIpsum({
 });
 
 const elem = document.getElementById("site");
-elem.innerText = lorem.generateParagraphs(57);
+elem.innerText = lorem.generateParagraphs(50);
 
-let renderer, camera, mixer, clock;
+let renderer, camera, mixer, clipDuration, totalScrollHeight;
 //let controls;
 
 let scene = new THREE.Scene();
@@ -36,7 +38,7 @@ renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById("viewport")
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(new THREE.Color(0x0, 0));
+renderer.setClearColor(new THREE.Color(0x1f1f1f));
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1;
@@ -47,30 +49,36 @@ camera.position.y = 1.5;
 camera.position.z = 0;
 camera.lookAt(0, 0.5, 0);
 
+const light = new THREE.AmbientLight( 0xFFFFFF, 2 ); // soft white light
+scene.add( light );
+
 /*
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0);
 scene.add(directionalLight);
+
+const helper = new THREE.DirectionalLightHelper( directionalLight, 5, 'red' );
+scene.add( helper );
 */
 
-/*const helper = new THREE.DirectionalLightHelper( directionalLight, 5, 'black' );
-scene.add( helper );*/
-
-// white spotlight shining from the side, casting a shadow
-let spotLight = new THREE.SpotLight(0xffffff, 5, 25, -Math.PI / 6);
-spotLight.position.set(0, 2, -1);
-spotLight.rotateZ(45);
+const spotLight = new THREE.SpotLight(0xffffff, 10, 25, -Math.PI / 6);
+spotLight.position.set(-2, 2, 0);
+spotLight.castShadow = true;
+spotLight.shadow.mapSize.width = 1024;
+spotLight.shadow.mapSize.height = 1024;
 scene.add(spotLight);
 
 /*const spotHelper = new THREE.SpotLightHelper(spotLight, 'red');
 scene.add(spotHelper);*/
+
+
 
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
 pmremGenerator.compileEquirectangularShader();
 
 let loader = new GLTFLoader();
 
-const rgbeLoader = new RGBELoader();
-rgbeLoader.load('https://threejs.org/examples/textures/equirectangular/venice_sunset_1k.hdr', function (texture) {
+const rgbeLoader = new TextureLoader();
+rgbeLoader.load('https://threejs.org/examples/textures/2294472375_24a3b8ef46_o.jpg', function (texture) {
 
   const envMap = pmremGenerator.fromEquirectangular(texture).texture;
 
@@ -86,40 +94,38 @@ rgbeLoader.load('https://threejs.org/examples/textures/equirectangular/venice_su
 
       let object = gltf.scene;
 
-
-
       object.scale.set(scale, scale, scale);
-      //object.position.y = -5;
-      //object.position.x = 4;
-      //object.castShadow = true;
+      object.castShadow = true;
       object.receiveShadow = true;
 
       object.traverse((o) => {
         if (o.isMesh) {
 
-          console.log('o.material.type -->', o.material.type);
-
-          o.material.envMap = envMap;
-          o.material.envMapIntensity = 1;
-          o.material.reflectivity = 2;
+          o.material.reflectivity = 1;
           o.material.metalness = 1;
-          //o.material.roughness = 0.7;
+          o.material.needsUpdate = true;
+          o.material.envMapIntensity = 0.8;
+          o.material.roughness = 0.15
         }
       });
 
       mixer = new THREE.AnimationMixer(gltf.scene);
 
       gltf.animations.forEach((clip) => {
+        clipDuration = clip.duration;
+        console.log('clipDuration -->', clipDuration);
 
         const animAction = mixer.clipAction(clip);
+        //animAction.loop = THREE.LoopRepeat;
         animAction.loop = THREE.LoopPingPong;
-        //animAction.timeScale = ;
+        //animAction.timeScale = 1;
 
         animAction.play();
 
       });
 
       scene.add(object);
+      directionalLight.target = object
     },
     function (xhr) {
       console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
@@ -135,10 +141,6 @@ rgbeLoader.load('https://threejs.org/examples/textures/equirectangular/venice_su
 
 let animate = function () {
   requestAnimationFrame(animate);
-
-  //const delta = clock.getDelta();
-
-  //if ( mixer ) mixer.update( delta );
   renderer.render(scene, camera);
 };
 
@@ -146,11 +148,17 @@ animate();
 
 let oldValue = 0;
 
+window.addEventListener('load', function (e) {
+  totalScrollHeight = window.document.documentElement.scrollHeight - window.innerHeight;
+});
+
 window.addEventListener('scroll', function (e) {
 
-  //const totalScrollHeight = window.document.documentElement.scrollHeight - window.innerHeight;
+
+  console.log('totalScrollHeight -->', totalScrollHeight);
 
   let newValue = window.pageYOffset;
+  //console.log('newValue -->', newValue);
   /*
     const diff = (newValue / totalScrollHeight) * 3;
     console.log('diff -->', diff);
@@ -161,6 +169,9 @@ window.addEventListener('scroll', function (e) {
 
   mixer.update((newValue - oldValue) / 1000);
   oldValue = newValue;
+ /* const time = (window.pageYOffset / totalScrollHeight) * clipDuration;
+  console.log('time -->', time);
+  mixer.setTime(MathUtil.clamp(time, 0, clipDuration));*/
 });
 
 window.addEventListener('resize', onWindowResize, false);
