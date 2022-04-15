@@ -47,17 +47,22 @@ camera.position.y = 1.5;
 camera.position.z = 0;
 camera.lookAt(0, 0.5, 0);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+/*
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
 scene.add(directionalLight);
+*/
 
 /*const helper = new THREE.DirectionalLightHelper( directionalLight, 5, 'black' );
 scene.add( helper );*/
 
 // white spotlight shining from the side, casting a shadow
-/*let spotLight = new THREE.SpotLight(0xffffff, 6, 25, Math.PI / 6);
-spotLight.position.set(0, 10, 1);
+let spotLight = new THREE.SpotLight(0xffffff, 5, 25, -Math.PI / 6);
+spotLight.position.set(0, 2, -1);
 spotLight.rotateZ(45);
-scene.add(spotLight);*/
+scene.add(spotLight);
+
+/*const spotHelper = new THREE.SpotLightHelper(spotLight, 'red');
+scene.add(spotHelper);*/
 
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
 pmremGenerator.compileEquirectangularShader();
@@ -97,7 +102,8 @@ rgbeLoader.load('https://threejs.org/examples/textures/equirectangular/venice_su
           o.material.envMap = envMap;
           o.material.envMapIntensity = 1;
           o.material.reflectivity = 2;
-          o.material.metalness = 0.78;
+          o.material.metalness = 1;
+          //o.material.roughness = 0.7;
         }
       });
 
