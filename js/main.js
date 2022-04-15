@@ -43,13 +43,17 @@ renderer.toneMappingExposure = 0.8;
 
 
 camera.position.x = 1.5;
-camera.position.y = 1;
-camera.position.z = -1.5;
-camera.lookAt(0, 0, 0);
+camera.position.y = 1.5;
+camera.position.z = 0;
+camera.lookAt(0, 0.5, 0);
 
-const light = new THREE.AmbientLight( 0xffffbb, 1.2 );
-scene.add(light);
 
+
+const directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+scene.add( directionalLight );
+
+/*const helper = new THREE.DirectionalLightHelper( directionalLight, 5, 'black' );
+scene.add( helper );*/
 
 // white spotlight shining from the side, casting a shadow
 let spotLight = new THREE.SpotLight(0xffffff, 6, 25, Math.PI / 6);
@@ -63,17 +67,21 @@ clock = new THREE.Clock();
 // Load a glTF resource
 loader.load(
   // resource URL
-  "scene.gltf",
+  "spinblade.glb",
   // called when the resource is loaded
   function (gltf) {
-    gltf.scene.scale.set(0.05, 0.05, 0.05);
+    gltf.scene.scale.set(0.3, 0.3, 0.3);
 
     scene.add(gltf.scene);
     mixer = new THREE.AnimationMixer( gltf.scene );
 
     gltf.animations.forEach( ( clip ) => {
 
-      mixer.clipAction( clip ).play();
+      const animAction = mixer.clipAction(clip);
+      animAction.loop = THREE.LoopPingPong;
+      //animAction.timeScale = ;
+
+      animAction.play();
 
     } );
 
@@ -85,7 +93,7 @@ loader.load(
   // called when loading has errors
   function (error) {
     console.log('error -->', error);
-    console.log("An error happened");
+    console.log("Load Failed!");
   }
 );
 
@@ -106,9 +114,19 @@ let oldValue = 0;
 
 window.addEventListener('scroll' , function(e){
 
-  let newValue = window.pageYOffset;
+  //const totalScrollHeight = window.document.documentElement.scrollHeight - window.innerHeight;
 
-  mixer.update( (newValue - oldValue) / 250 );
+  let newValue = window.pageYOffset;
+/*
+  const diff = (newValue / totalScrollHeight) * 3;
+  console.log('diff -->', diff);
+
+
+  camera.position.y = -0.5 + diff;
+  camera.lookAt(0, 0.5 - (diff * 0.1), 0)*/
+
+
+  mixer.update( (newValue - oldValue) / 1000 );
   oldValue = newValue;
 });
 
